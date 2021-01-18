@@ -18,22 +18,20 @@ Route::get('/', function () {
 
 Auth::routes();
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::get('/home', 'PatronController@index')->name('home');
 Auth::routes();
 
-Route::get('/home', 'HomeController@index')->name('home');
+Route::get('/home', 'PatronController@index')->name('home');
 
 Route::group(['middleware' => 'auth'], function () {
-	Route::resource('user', 'UserController', ['except' => ['show']]);
-	Route::get('profile', ['as' => 'profile.edit', 'uses' => 'ProfileController@edit']);
-	Route::put('profile', ['as' => 'profile.update', 'uses' => 'ProfileController@update']);
-	Route::get('upgrade', function () {return view('pages.upgrade');})->name('upgrade');
-	 Route::get('map', function () {return view('pages.maps');})->name('map');
-	 Route::get('icons', function () {return view('pages.icons');})->name('icons');
-	 Route::get('table-list', function () {return view('pages.tables');})->name('table');
-	Route::put('profile/password', ['as' => 'profile.password', 'uses' => 'ProfileController@password']);
+
 	Route::get('patrons', 'PatronController@index')->name('patrons.show');
 	Route::get('patrons/{patron}/edit', 'PatronController@edit')->name('patrons.edit');
-	Route::put('patrons/lend', 'PatronController@lend')->name('patron.lend');
+	Route::put('book-patron/store', 'BookPatronController@store')->name('book-patron.store');
+	Route::post('patron/{patron}/update', 'PatronController@update')->name('patrons.update');
+	Route::get('patron/{patron}/pay', 'PatronController@pay')->name('patrons.pay');
+	Route::get('patrons/{patron}/delete', 'PatronController@destroy')->name('patrons.destroy');
+	Route::get('book-patron/{id}/delete', 'BookPatronController@destroy')->name('book-patron.destroy');
+	Route::get('patron/{patron_id}/return', 'BookPatronController@destroyAllByPatronId')->name('book-patron.destroy-all');
 });
 
