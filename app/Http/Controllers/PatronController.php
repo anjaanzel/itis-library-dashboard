@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Book;
 use App\Models\Patron;
 use App\Models\SubscriptionType;
+use App\Http\Requests;
 use Illuminate\Http\Request;
 
 class PatronController extends Controller
@@ -39,11 +40,14 @@ class PatronController extends Controller
         $patron = Patron::find($id);
         $bookPatrons = $patron->bookPatrons()->get();
         foreach ($bookPatrons as $bookPatron) {
-            $books[] = $bookPatron->book()->get()->first();
+            $book = $bookPatron->book()->get()->first();
+            $book->book_patron_id = $bookPatron->id;
+            $book->book_code = $bookPatron->book_code;
+            $books[] = $book;
             $patron->books = $books;
         }
 
-        $allBooks = Book::all();
+        $allBooks = Book::all()->where('no_of_issues', '>', '0');
         $subTypes = SubscriptionType::all();
 
         return view('patrons.edit', [
@@ -53,8 +57,42 @@ class PatronController extends Controller
             ]);
     }
 
-    public function lend(Request $request)
+    public function update(Request $request, Patron $patron)
     {
-        return true;
+        $input = $request->all();
+
+        $patron->full_name = $input['full_name'];
+        $patron->phone_number = $input['phone_number'];
+        $patron->date_of_birth = date('Y-m-d', strtotime($input['date_of_birth']));
+        $patron->expected_renew_date = date('Y-m-d', strtotime($input['expected_renew_date']));
+        $patron->subscription_type_id = $input['subscription_type_id'];
+        $patron->save();
+
+        return redirect(route('patrons.edit', $patron->id));
+    }
+
+    public function destroy(Patron $patron)
+    {
+        if (count($patron->bookPatrons()->get()->toArray()) > 0) {
+            request()->session()->flash('status', __('This patron still holds books!'));
+            return redirect(route('patrons.edit', $patron->id));
+        }
+        $patron->delete();
+
+        return redirect(route('patrons.show'));
+    }
+
+    public function pay(Patron $patron)
+    {
+        if ($patron->expected_renew_date > now()) {
+            $patron->expected_renew_date = date("Y-m-d", strtotime('+1 year', strtotime(now())));
+            
+        } else {
+            $patron->expected_renew_date = date("Y-m-d", strtotime('+1 year', strtotime($patron->expected_renew_date)));
+        }
+        
+        $patron->save();
+
+        return redirect(route('patrons.edit', $patron->id));
     }
 }

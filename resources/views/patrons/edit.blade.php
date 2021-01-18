@@ -1,10 +1,9 @@
 @extends('layouts.app', ['title' => __('User Profile')])
-
 @section('content')
     @include('users.partials.header', [
         'title' => $patron->full_name,
-        'description' => __('Edit basic info, renew the subscription or lend books to this petron.'),
-        'class' => 'col-lg-7'
+        'description' => __('Edit basic info, renew the subscription or lend books to this patron.'),
+        'class' => 'col-lg-9'
     ])
     <div class="container-fluid mt--7">
         <div class="row">
@@ -21,8 +20,8 @@
                     </div>
                     <div class="card-header text-center border-0 pt-8 pt-md-4 pb-0 pb-md-4">
                         <div class="d-flex justify-content-between">
-                            <a href="#" class="btn btn-sm btn-info mr-4">{{ __('Return all books') }}</a>
-                            <a href="#" class="btn btn-sm btn-default float-right">{{ __('Pay year\'s fee') }}</a>
+                            <a href="{{route('book-patron.destroy-all', $patron->id)}}" class="btn btn-sm btn-info mr-4">{{ __('Return all books') }}</a>
+                            <a href="{{route('patrons.pay', $patron)}}" class="btn btn-sm btn-default float-right">{{ __('Pay year\'s fee') }}</a>
                         </div>
                     </div>
                     <div class="card-body pt-0 pt-md-4">
@@ -34,7 +33,7 @@
                                         <span class="description">{{ __('Subscribed until') }}</span>
                                     </div>
                                     <div>
-                                        <span class="heading">{{ count($patron->books) }}</span>
+                                        <span class="heading">@if($patron->books) {{ count($patron->books) }} @else 0 @endif </span>
                                         <span class="description">{{ __('Books lent') }}</span>
                                     </div>
                                     <div>
@@ -55,6 +54,7 @@
                             <h3>
                                 Books currently lent
                                 <br>
+                                @if($patron->books)
                                 @foreach($patron->books as $book)
                                 <div class="font-weight-light row">
                                     <br>
@@ -62,10 +62,13 @@
                                         {{ $book->author }} - {{$book->title}}
                                     </span>
                                     <br>
-                                    <a href="#" class="btn btn-sm float-right col-6">{{ __('Return the book') }}</a>
+                                    <a href="{{route('book-patron.destroy', $book->book_patron_id)}}" class="btn btn-sm float-right col-6">{{ __('Return the book') }}</a>
                                 </div>
                                 
                                 @endforeach
+                                @else
+                                <span class="text-muted text-center text-sm">Patron does not hold any books</span>
+                                @endif
                             </h3>
                             </p>
                         </div>
@@ -80,12 +83,12 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <form method="post" action="{{ route('patron.lend') }}" autocomplete="off">
+                        <form method="post" action="{{ route('book-patron.store') }}" autocomplete="off">
                             @csrf
                             @method('put')
                             
                             @if (session('status'))
-                                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
                                     {{ session('status') }}
                                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                         <span aria-hidden="true">&times;</span>
@@ -93,20 +96,15 @@
                                 </div>
                             @endif
 
-
                             <div class="pl-lg-4">
-                                <div class="form-group{{ $errors->has('name') ? ' has-danger' : '' }}">
+                                <div class="form-group">
+                                <input type="hidden" name="patron_id" value="{{$patron->id}}">
                                     <label class="form-control-label" for="input-name">{{ __('Chosen book') }}</label>
-                                        <select class="form-control selectpicker" name="book" id="book">
+                                        <select class="form-control selectpicker" name="book_id">
                                             @foreach($allBooks as $book)
                                             <option value="{{$book->id}}">{{$book->author}} - {{$book->title}}</option>
                                             @endforeach
                                         </select>
-                                    @if ($errors->has('book'))
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $errors->first('book') }}</strong>
-                                        </span>
-                                    @endif
                                 </div>
                                 <div class="form-group{{ $errors->has('book_code') ? ' has-danger' : '' }}">
                                     <label class="form-control-label" for="input-email">{{ __('Book code') }}</label>
@@ -125,9 +123,8 @@
                             </div>
                         </form>
                         <hr class="my-4" />
-                        <form method="post" action="{{ route('profile.password') }}" autocomplete="off">
+                        <form method="post" action="{{ route('patrons.update', $patron) }}" autocomplete="off">
                             @csrf
-                            @method('put')
                             <div class="card-header bg-white border-0">
                                 <div class="row align-items-center">
                                     <h3 class="mb-0">{{ __('Basic information') }}</h3>
@@ -154,7 +151,7 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i class="ni ni-calendar-grid-58"></i></span>
                                         </div>
-                                        <input class="form-control datepicker" placeholder="Select date"
+                                        <input name="date_of_birth" class="form-control datepicker" placeholder="Select date"
                                         type="text" value="{{date('m/d/Y', strtotime($patron->date_of_birth))}}">
                                     </div>
                                 </div>
@@ -165,7 +162,7 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i class="ni ni-calendar-grid-58"></i></span>
                                         </div>
-                                        <input class="form-control datepicker" placeholder="Select date"
+                                        <input name="expected_renew_date" class="form-control datepicker" placeholder="Select date"
                                         type="text" value="{{date('m/d/Y', strtotime($patron->expected_renew_date))}}">
                                     </div>
                                 </div>
@@ -176,13 +173,20 @@
                                         @foreach($subTypes as $type)
                                         <option value="{{$type->id}}"
                                             @if($type->id == $patron->subscription_type_id)
-                                            selected @endif>{{$type->name}}</option>
+                                            selected @endif>{{$type->name}}  - {{ $type->price }} RSD</option>
                                         @endforeach
                                     </select>
                                 </div>
-
-                                <div class="text-center">
+                                <div class="row">
+                                <div class="text-left col-6">
+                                    <a href="{{ route('patrons.show') }}" type="button" class="btn btn-success mt-4">
+                                    
+                                    {{ __('Go back') }}
+                                    </a>
+                                </div>
+                                <div class="text-right col-6">
                                     <button type="submit" class="btn btn-success mt-4">{{ __('Save changes') }}</button>
+                                </div>
                                 </div>
                             </div>
                         </form>
