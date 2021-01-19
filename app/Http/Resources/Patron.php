@@ -20,6 +20,7 @@ class Patron extends JsonResource
             'phone_number' => $this->phone_number,
             'date_of_birth' => $this->date_of_birth,
             'expected_renew_date' => $this->expected_renew_date,
+            'subscription_type_id' => $this->subscription_type_id,
         ];
     }
 }
