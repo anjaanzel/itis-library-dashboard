@@ -14,6 +14,7 @@ class Book extends Model
         'author',
         'genre',
         'logo_path',
+        'no_of_issues'
     ];
 
     public function bookPatrons(): HasMany

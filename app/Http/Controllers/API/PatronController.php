@@ -70,6 +70,10 @@ class PatronController extends BaseController
 
     public function destroy(Patron $patron)
     {
+        if (count($patron->bookPatrons()->get()) > 0) {
+            return $this->sendError('You can not delete a patron if said patron holds a book issue!');
+        }
+
         $patron->delete();
 
         return $this->sendResponse([], 'Patron successfully deleted');

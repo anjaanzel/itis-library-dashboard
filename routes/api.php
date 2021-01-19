@@ -2,7 +2,6 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\API\PatronController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,9 +14,5 @@ use App\Http\Controllers\API\PatronController;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    Route::resource('patrons', PatronController::class);
-});
-
-Route::resource('patrons', PatronController::class);
-Route::resource('books', BookController::class);
+Route::resource('patrons', 'API\PatronController');
+Route::resource('books', 'API\BookController');

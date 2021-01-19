@@ -58,10 +58,10 @@ class BookController extends BaseController
         }
 
         $book->title = $input['title'];
-        $book->synopsis = $input['synopsis'];
+        $book->synopsis = isset($input['synopsis']) ? $input['synopsis'] : $book->synopsis;
         $book->author = $input['author'];
-        $book->genre = $input['genre'];
-        $book->logo_path = $input['logo_path'];
+        $book->genre = isset($input['genre']) ? $input['genre'] : $book->genre;
+        $book->logo_path = isset($input['logo_path']) ? $input['logo_path'] : $book->genre;
         $book->no_of_issues = $input['no_of_issues'];
         $book->save();
 
@@ -70,8 +70,10 @@ class BookController extends BaseController
 
     public function destroy(Book $book)
     {
+        if (count($book->bookPatrons()->get()) > 0) {
+            return $this->sendError('You can not delete a book if a patron holds an issue!');
+        }
         $book->delete();
-
         return $this->sendResponse([], 'Book successfully deleted');
     }
 }
