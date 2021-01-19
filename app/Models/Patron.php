@@ -16,6 +16,7 @@ class Patron extends Model
         'phone_number',
         'date_of_birth',
         'expected_renew_date',
+        'subscription_type_id'
     ];
 
     public function bookPatrons(): HasMany

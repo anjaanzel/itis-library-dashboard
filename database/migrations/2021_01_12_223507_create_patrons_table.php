@@ -16,7 +16,7 @@ class CreatePatronsTable extends Migration
         Schema::create('patrons', function (Blueprint $table) {
             $table->id();
             $table->string('full_name');
-            $table->int('phone_number');
+            $table->text('phone_number');
             $table->date('date_of_birth');
             $table->date('expected_renew_date');
             $table->timestamps();
