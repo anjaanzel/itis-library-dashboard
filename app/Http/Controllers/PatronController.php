@@ -26,6 +26,7 @@ class PatronController extends Controller
             $patron->percentage = $percentage;
 
             $bookPatrons = $patron->bookPatrons()->get();
+            $books = array();
             foreach ($bookPatrons as $bookPatron) {
                 $books[] = $bookPatron->book()->get()->first();
                 $patron->books = $books;
